@@ -1,0 +1,13 @@
+{
+	"clientes": [
+					{
+					"idCliente": ,
+					"roles": [
+							{
+							"rol": ,
+							"idContrato": ,				
+							},
+							]
+					},
+				]
+}

@@ -1,0 +1,20 @@
+{
+	"clientes": [
+					{
+					"idCliente": ,
+					"roles": [
+							{
+							"rol": ,
+							"idContrato": ,
+							"consentimiento": [{
+												"coConsentimientoMarca": ,
+												"valor": , #Este campo tiene que cambiar en el codigo
+												"fechaInicio": , #Este campo tiene que cambiar en el codigo
+												"fechaFin": , #Este campo tiene que cambiar en el codigo
+												"fechaRegistro": , #Este campo tiene que cambiar en el codigo
+											  },]					
+							},
+							]
+					},
+				]
+}

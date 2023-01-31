@@ -1,0 +1,15 @@
+{
+	"clientes": [
+					{
+					"idCliente": ,
+					"roles": [
+							{
+							"rol": ,
+							"idContrato": ,
+							"coConsentimientoMarca": ,				
+							},
+							},
+							]
+					},
+				]
+}
