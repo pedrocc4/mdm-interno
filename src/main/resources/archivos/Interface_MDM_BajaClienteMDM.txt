@@ -1,7 +1,0 @@
-{
-	"clientes": [
-					{
-					"idInterno": ,
-					}
-				]
-}
