@@ -1,5 +1,15 @@
 package es.nfq.mdminterno.read;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jackson.JsonLoader;
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
+import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.github.fge.jsonschema.main.JsonSchema;
+import com.github.fge.jsonschema.main.JsonSchemaFactory;
+import com.google.common.collect.Iterators;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
@@ -8,6 +18,7 @@ import es.nfq.mdminterno.dto.baja.BajaCliente;
 import es.nfq.mdminterno.dto.baja.BajaConsentimiento;
 import es.nfq.mdminterno.dto.baja.BajaMDM;
 import es.nfq.mdminterno.dto.baja.BajaRol;
+import es.nfq.mdminterno.dto.plantilla.Plantilla;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -27,8 +38,8 @@ import java.util.stream.Collectors;
 public class Read {
     public static final String RUTA_HISTORICO = "\\src\\main\\resources\\historico\\";
     public static final String RUTA_ERROR = "\\src\\main\\resources\\errores\\";
-
     public static final String RUTA = "src/main/resources/archivos";
+    public static final String RUTA_INTERFACES = "src/main/resources/interfaces";
     public static final String ALTA = "AltaCliente";
     public static final String ALTA_CONSENTIMIENTO = "AltaConsentimiento";
     public static final String ALTA_ROL = "AltaRol";
@@ -101,30 +112,89 @@ public class Read {
         }
     }
 
-    public boolean jsonValido(File file, Cliente dto, String tipo) {
+    public String limpiarContenido(String contenido) {
+        contenido = contenido.replace("[", "");
+        return contenido.replace("]", "");
+    }
+
+    public void obtenerParametros(List<String> parametrosPlantilla, JsonNode plantillaType, ObjectMapper mapper)
+            throws JsonProcessingException {
+        String contenido = plantillaType.fields().hasNext() ? plantillaType.fields().next().getValue().toString() : "";
+        while (!contenido.isEmpty()) {
+            contenido = limpiarContenido(contenido);
+            JsonNode plantillaContent = mapper.readTree(contenido);
+            plantillaContent.fieldNames().forEachRemaining(s -> parametrosPlantilla.add(s));
+            int size = Iterators.size(plantillaContent.fields());
+            for (int i = 0; i < size; i++) {
+                contenido = plantillaContent.fields().next().getValue().toString();
+                contenido = limpiarContenido(contenido);
+                JsonNode plantillaContentInside = mapper.readTree(contenido);
+                obtenerParametros(parametrosPlantilla, plantillaContentInside, mapper);
+            }
+        }
+    }
+
+    public boolean jsonValido(File interfaz, File file, Cliente dto, String tipo) {
         Gson gson = new Gson();
         try {
-            JsonReader reader = new JsonReader(new FileReader(file));
-            switch (tipo) {
-                case BAJA:
-                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaCliente>>() {
-                    }.getType());
-                    break;
-                case BAJA_ROL:
-                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaRol>>() {
-                    }.getType());
-                    break;
-                case BAJA_CONSENTIMIENTO:
-                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaConsentimiento>>() {
-                    }.getType());
-                    break;
-                case BAJA_MDM:
-                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaMDM>>() {
-                    }.getType());
-                    break;
+//            JsonReader reader = new JsonReader(new FileReader(file));
+            List<String> parametrosPlantilla = new ArrayList<>();
+            List<String> parametrosArchivo = new ArrayList<>();
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode plantillaType = mapper.readTree(interfaz);
+            JsonNode aValidar = mapper.readTree(file);
+            obtenerParametros(parametrosPlantilla, plantillaType, mapper);
+            parametrosPlantilla.forEach(s -> log.info(s));
+//            plantillaType.fields().forEachRemaining(s -> s.getValue().elements()
+//                    .forEachRemaining(jsonNode -> log.info(jsonNode.asText())));
+//            aValidar.fields().forEachRemaining(s -> s.getValue().fields().forEachRemaining(
+//                    p -> log.info(p.toString())));
+            if (!plantillaType.equals(aValidar)) {
+                throw new IllegalArgumentException("El archivo a validar no coincide con la estructura de la plantilla");
             }
-            reader.close();
-            dto.validate();
+//            JsonNode schemaNode = JsonLoader.fromFile(interfaz);
+//            JsonSchemaFactory factory = JsonSchemaFactory.byDefault();
+//            JsonSchema schema = factory.getJsonSchema(schemaNode);
+//
+//            JsonNode data = JsonLoader.fromFile(file);
+//
+//            try {
+//                ProcessingReport report = schema.validate(data);
+//                if (report.isSuccess()) {
+//                    // El objeto JSON cumple con la estructura esperada
+//                    log.info("El JSON tiene estructura correcta");
+//                } else {
+//                    // El objeto JSON no cumple con la estructura esperada
+//                    // Puedes imprimir los errores de validación en el report
+//                    log.error("El JSON no tiene la estructura correcta");
+//                }
+//            } catch (ProcessingException e) {
+//                log.error(e.getLocalizedMessage());
+//                return false;
+//            }
+//            switch (tipo) {
+//                case BAJA:
+//                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaCliente>>() {
+//                    }.getType());
+//                    break;
+//                case BAJA_ROL:
+//                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaRol>>() {
+//                    }.getType());
+//                    break;
+//                case BAJA_CONSENTIMIENTO:
+//                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaConsentimiento>>() {
+//                    }.getType());
+//                    break;
+//                case BAJA_MDM:
+//                    dto = gson.fromJson(reader, new TypeToken<Cliente<BajaMDM>>() {
+//                    }.getType());
+//                    break;
+//            }
+//            reader.close();
+//            dto.validate();
+        } catch (IllegalArgumentException e) {
+            log.error(e.getLocalizedMessage());
+            return false;
         } catch (IllegalStateException e) {
             log.error(e.getLocalizedMessage());
             return false;
@@ -134,21 +204,25 @@ public class Read {
         } catch (IOException e) {
             log.error(e.getLocalizedMessage());
             return false;
-        } catch (InvocationTargetException e) {
-            log.error(e.getTargetException().getLocalizedMessage());
-            return false;
-        } catch (IllegalAccessException e) {
-            log.error(e.getLocalizedMessage());
-            return false;
-        } catch (NoSuchMethodException e) {
-            log.error(e.getLocalizedMessage());
-            return false;
+//        } catch (InvocationTargetException e) {
+//            log.error(e.getTargetException().getLocalizedMessage());
+//            return false;
+//        } catch (IllegalAccessException e) {
+//            log.error(e.getLocalizedMessage());
+//            return false;
+//        } catch (NoSuchMethodException e) {
+//            log.error(e.getLocalizedMessage());
+//            return false;
+//        } catch (ProcessingException e) {
+//            log.error(e.getLocalizedMessage());
+//            return false;
+//        }
         }
         return true;
     }
 
-    public void procesarFile(File file, Cliente dto, String tipo) {
-        if (jsonValido(file, dto, tipo)) {
+    public void procesarFile(List<File> interfaces, File file, Cliente dto, String tipo) {
+        if (jsonValido(obtenerInterfaz(interfaces, tipo), file, dto, tipo)) {
             String[] cmd = crearPython(file, tipo);
             if (ejecutarPython(cmd)) {
                 log.info("Fichero " + file.getName() + " correcto");
@@ -159,12 +233,18 @@ public class Read {
             }
         } else {
             log.info("Fichero " + file.getName() + " inválido");
-            moverFichero(file, definirRutaError(file));
+//            moverFichero(file, definirRutaError(file));
         }
     }
 
-    public void procesarFileFallo(File file, Cliente dto, String tipo) {
-        if (jsonValido(file, dto, tipo)) {
+    public File obtenerInterfaz(List<File> interfaces, String tipo) {
+        return interfaces.stream()
+                .filter(f -> f.getName().contains(tipo))
+                .findFirst().orElse(null);
+    }
+
+    public void procesarFileFallo(List<File> interfaces, File file, Cliente dto, String tipo) {
+        if (jsonValido(obtenerInterfaz(interfaces, tipo), file, dto, tipo)) {
             String[] cmd = crearPythonError(file, tipo);
             if (ejecutarPython(cmd)) {
                 log.info("Fichero " + file.getName() + " correcto");
@@ -183,33 +263,25 @@ public class Read {
     public void proceso() throws InterruptedException {
         Thread.sleep(1000);
         List<File> nombres = getFiles(RUTA);
+        List<File> interfaces = getFiles(RUTA_INTERFACES);
         nombres.forEach(
                 s -> {
                     log.info("-- Procesando " + s.getName() + " --");
-                    Cliente dto = new Cliente(); //TODO dto alta
+                    Cliente dto = new Cliente();
                     if (s.getName().contains(ALTA)) {
-                        String[] cmd = crearPythonError(s, ALTA);
-                        if (ejecutarPython(cmd)) {
-                            moverFichero(s, definirRuta(s));
-                        } else moverFichero(s, definirRutaError(s));
+                        procesarFileFallo(interfaces, s, dto, ALTA);
                     } else if (s.getName().contains(ALTA_ROL)) {
-                        String[] cmd = crearPythonError(s, ALTA_ROL);
-                        if (ejecutarPython(cmd)) {
-                            moverFichero(s, definirRuta(s));
-                        } else moverFichero(s, definirRutaError(s));
+                        procesarFileFallo(interfaces, s, dto, ALTA_ROL);
                     } else if (s.getName().contains(ALTA_CONSENTIMIENTO)) {
-                        String[] cmd = crearPythonError(s, ALTA_CONSENTIMIENTO);
-                        if (ejecutarPython(cmd)) {
-                            moverFichero(s, definirRuta(s));
-                        } else moverFichero(s, definirRutaError(s));
+                        procesarFileFallo(interfaces, s, dto, ALTA_CONSENTIMIENTO);
                     } else if (s.getName().contains(BAJA)) {
-                        procesarFile(s, dto, BAJA);
+                        procesarFile(interfaces, s, dto, BAJA);
                     } else if (s.getName().contains(BAJA_MDM)) {
-                        procesarFile(s, dto, BAJA_MDM);
+                        procesarFile(interfaces, s, dto, BAJA_MDM);
                     } else if (s.getName().contains(BAJA_CONSENTIMIENTO)) {
-                        procesarFile(s, dto, BAJA_CONSENTIMIENTO);
+                        procesarFile(interfaces, s, dto, BAJA_CONSENTIMIENTO);
                     } else if (s.getName().contains(BAJA_ROL)) {
-                        procesarFile(s, dto, BAJA_ROL);
+                        procesarFile(interfaces, s, dto, BAJA_ROL);
                     }
                     log.info("-- Terminado de procesar " + s.getName() + " --\n");
                 }

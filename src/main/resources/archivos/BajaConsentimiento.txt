@@ -1,0 +1,16 @@
+{
+	"clientes": [
+					{
+					"idCliente": "preuab",
+					"roles": [
+							{
+							"rol": "asdada",
+							"idContrato": "asdad",
+							"consentimiento": [{
+												"coConsentimientoMarca": "asda"
+											  }]
+							}
+							]
+					}
+				]
+}

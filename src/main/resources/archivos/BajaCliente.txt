@@ -1,0 +1,7 @@
+{
+	"clientes": [
+					{
+					"idCliente": String (12-12)
+					}
+				]
+}
