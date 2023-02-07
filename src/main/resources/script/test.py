@@ -1,5 +1,7 @@
 import sys
-import time
 
-if __name__ == '__main__':
-    print(sys.argv)
+path = 'fichero.txt'
+with open(path, 'w') as f:
+    f.write('Funciona')
+print(sys.argv)
+print(sys.argv)

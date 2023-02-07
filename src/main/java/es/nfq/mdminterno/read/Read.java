@@ -20,14 +20,14 @@ import es.nfq.mdminterno.dto.baja.BajaMDM;
 import es.nfq.mdminterno.dto.baja.BajaRol;
 import es.nfq.mdminterno.dto.plantilla.Plantilla;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.log4j.Logger;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -70,19 +70,17 @@ public class Read {
         };
     }
 
-    public String[] crearPythonError(File file, String operacion) {
-        return new String[]{
-                "python",
-                "src/main/resources/script/test_error.py",
-                operacion,
-                file.getAbsolutePath()
-        };
-    }
-
     public boolean ejecutarPython(String[] cmd) {
         try {
+            Logger log = Logger.getLogger("python." + cmd[2]);
             Process process = Runtime.getRuntime().exec(cmd);
             int exitValue = process.waitFor();
+            InputStream stdout = process.getInputStream();
+            String text = new BufferedReader(
+                    new InputStreamReader(stdout, StandardCharsets.UTF_8))
+                    .lines()
+                    .collect(Collectors.joining("\n"));
+            log.info(text);
             return exitValue == 0;
         } catch (IOException | InterruptedException e) {
             log.error(e.getLocalizedMessage());
@@ -91,12 +89,12 @@ public class Read {
     }
 
     public String definirRuta(File file) {
-        String ruta = System.getProperty("user.dir");
+        String ruta = Paths.get("").toAbsolutePath().toString();
         return ruta + RUTA_HISTORICO + file.getName();
     }
 
     public String definirRutaError(File file) {
-        String ruta = System.getProperty("user.dir");
+        String ruta = Paths.get("").toAbsolutePath().toString();
         return ruta + RUTA_ERROR + file.getName();
     }
 
@@ -143,7 +141,7 @@ public class Read {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode plantillaType = mapper.readTree(interfaz);
             JsonNode aValidar = mapper.readTree(file);
-            obtenerParametros(parametrosPlantilla, plantillaType, mapper);
+//            obtenerParametros(parametrosPlantilla, plantillaType, mapper);
             parametrosPlantilla.forEach(s -> log.info(s));
 //            plantillaType.fields().forEachRemaining(s -> s.getValue().elements()
 //                    .forEachRemaining(jsonNode -> log.info(jsonNode.asText())));
@@ -222,19 +220,19 @@ public class Read {
     }
 
     public void procesarFile(List<File> interfaces, File file, Cliente dto, String tipo) {
-        if (jsonValido(obtenerInterfaz(interfaces, tipo), file, dto, tipo)) {
-            String[] cmd = crearPython(file, tipo);
-            if (ejecutarPython(cmd)) {
-                log.info("Fichero " + file.getName() + " correcto");
-                moverFichero(file, definirRuta(file));
-            } else {
-                log.info("Fichero " + file.getName() + " incorrecto");
-                moverFichero(file, definirRutaError(file));
-            }
+//        if (jsonValido(obtenerInterfaz(interfaces, tipo), file, dto, tipo)) {
+        String[] cmd = crearPython(file, tipo);
+        if (ejecutarPython(cmd)) {
+            log.info("Fichero " + file.getName() + " correcto");
+            moverFichero(file, definirRuta(file));
         } else {
-            log.info("Fichero " + file.getName() + " inválido");
-//            moverFichero(file, definirRutaError(file));
+            log.info("Fichero " + file.getName() + " incorrecto");
+            moverFichero(file, definirRutaError(file));
         }
+//        } else {
+//            log.info("Fichero " + file.getName() + " inválido");
+//            moverFichero(file, definirRutaError(file));
+//        }
     }
 
     public File obtenerInterfaz(List<File> interfaces, String tipo) {
@@ -243,25 +241,12 @@ public class Read {
                 .findFirst().orElse(null);
     }
 
-    public void procesarFileFallo(List<File> interfaces, File file, Cliente dto, String tipo) {
-        if (jsonValido(obtenerInterfaz(interfaces, tipo), file, dto, tipo)) {
-            String[] cmd = crearPythonError(file, tipo);
-            if (ejecutarPython(cmd)) {
-                log.info("Fichero " + file.getName() + " correcto");
-                moverFichero(file, definirRuta(file));
-            } else {
-                log.info("Fichero " + file.getName() + " incorrecto");
-                moverFichero(file, definirRutaError(file));
-            }
-        } else {
-            log.info("Fichero " + file.getName() + " inválido");
-            moverFichero(file, definirRutaError(file));
-        }
-    }
+    // TODO log
 
     @Scheduled(fixedRate = 300000)
     public void proceso() throws InterruptedException {
         Thread.sleep(1000);
+        log.info("-- COMIENZA PROCESO --");
         List<File> nombres = getFiles(RUTA);
         List<File> interfaces = getFiles(RUTA_INTERFACES);
         nombres.forEach(
@@ -269,11 +254,11 @@ public class Read {
                     log.info("-- Procesando " + s.getName() + " --");
                     Cliente dto = new Cliente();
                     if (s.getName().contains(ALTA)) {
-                        procesarFileFallo(interfaces, s, dto, ALTA);
+                        procesarFile(interfaces, s, dto, ALTA);
                     } else if (s.getName().contains(ALTA_ROL)) {
-                        procesarFileFallo(interfaces, s, dto, ALTA_ROL);
+                        procesarFile(interfaces, s, dto, ALTA_ROL);
                     } else if (s.getName().contains(ALTA_CONSENTIMIENTO)) {
-                        procesarFileFallo(interfaces, s, dto, ALTA_CONSENTIMIENTO);
+                        procesarFile(interfaces, s, dto, ALTA_CONSENTIMIENTO);
                     } else if (s.getName().contains(BAJA)) {
                         procesarFile(interfaces, s, dto, BAJA);
                     } else if (s.getName().contains(BAJA_MDM)) {
@@ -282,10 +267,14 @@ public class Read {
                         procesarFile(interfaces, s, dto, BAJA_CONSENTIMIENTO);
                     } else if (s.getName().contains(BAJA_ROL)) {
                         procesarFile(interfaces, s, dto, BAJA_ROL);
+                    } else {
+                        log.error("Nombre de fichero incorrecto");
+                        moverFichero(s, definirRutaError(s));
                     }
                     log.info("-- Terminado de procesar " + s.getName() + " --\n");
                 }
         );
+        log.info("-- PROCESO TERMINADO --");
         // TODO: Actualizar al terminar
         // FIXME: Como comentario adicional, aunque la ejecución de la aplicación sea cada cierto periodo de tiempo,
         // hasta que no terminen de ejecutarse los comandos de la anterior ejecución no debería volver a ejecutarse.

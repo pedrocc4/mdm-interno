@@ -1,0 +1,66 @@
+{
+	"clientes": [
+					{
+					"Origen": ,
+					"fechaEfecto": ,
+					"tipoCliente": ,
+					"idCliente": ,
+					"Nombre": ,
+					"nombreComercial": ,
+					"Apellido1": ,
+					"Apellido2": ,
+					"TipoPersona": ,
+					"tipoDocumentoIdentificacion": ,
+					"numeroDocumentoIdentificacion": ,
+					"fechaNacimiento": ,
+					"Sexo": ,
+					"EstadoCivil": ,
+					"Idioma": ,
+					"Nacionalidad": ,
+					"Ocupacion": ,
+					"cnae": ,
+					"roles": [
+							{
+							"rol": ,
+							"idContrato": ,
+							"EstadoContrato": ,
+							"numeroContrato": ,
+							"fechaInicio": ,
+							"fechaFin": ,
+							"lineaNegocio": ,
+							"Canal": ,
+							"medioContactoPreferido": ,
+							"prefijoTelefonoMovil": ,
+							"numeroTelefonoMovil": ,
+							"prefijoTelefonoFijo": ,
+							"numeroTelefonoFijo": ,
+							"correoElectronico": ,
+							"tipoDomicilio": ,
+							"Pais": ,
+							"Provincia": ,
+							"Municipio": ,
+							"Localidad": ,
+							"EntidadColectiva": ,
+							"EntidadSingular": ,
+							"TipoVia": ,
+							"nombreDomicilio": ,
+							"numeroDomicilio": ,
+							"Bloque": ,
+							"portal" ,
+							"Piso": ,
+							"Puerta": ,
+							"Escalera": ,
+							"restoDatosDomicilio": ,
+							"codigoPostal": ,
+							"consentimiento": [{
+												"coConsentimientoMarca": ,
+												"valor": , #Este campo tiene que cambiar en el codigo
+												"fechaInicio": , #Este campo tiene que cambiar en el codigo
+												"fechaFin": , #Este campo tiene que cambiar en el codigo
+												"fechaRegistro": , #Este campo tiene que cambiar en el codigo
+											  },]					
+							},
+							]
+					},
+				]
+}
