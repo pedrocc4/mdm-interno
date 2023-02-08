@@ -1,7 +1,6 @@
 package es.nfq.mdminterno.dto.baja;
 
 import com.google.gson.annotations.SerializedName;
-import es.nfq.mdminterno.dto.Cliente;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
 
