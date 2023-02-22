@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,11 +14,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static es.nfq.mdminterno.utils.Constantes.*;
-import static es.nfq.mdminterno.utils.Constantes.ERROR_INESPERADO;
 
 @Service
-@Slf4j
 public class ProcessServiceImpl implements IProcessService {
+   private final Logger log = Logger.getLogger("java");
     @Override
     public List<File> getFiles(String ruta) {
         final File folder = new File(ruta);
@@ -58,7 +56,7 @@ public class ProcessServiceImpl implements IProcessService {
             log.info(text);
             return exitValue == 0;
         } catch (IOException | InterruptedException e) {
-            log.error("Se ha producido un error al ejecutar el archivo python: " + e.getLocalizedMessage());
+            log.info("Se ha producido un error al ejecutar el archivo python: " + e.getLocalizedMessage());
             Thread.currentThread().interrupt();
             throw new APIException(ERROR_INESPERADO);
         }
@@ -79,12 +77,6 @@ public class ProcessServiceImpl implements IProcessService {
     public boolean moverFichero(File file1, String targetDirectory) {
         File file = new File(file1.getAbsolutePath());
         if (file.renameTo(new File(targetDirectory))) {
-//            try {
-//                Files.delete(file.toPath());
-//            } catch (IOException e) {
-//                log.error("Se ha producido un problema al borrar el fichero: " + e.getLocalizedMessage());
-//                throw new APIException(ERROR_INESPERADO);
-//            }
             if (targetDirectory.contains("historico")) {
                 log.info("Fichero a directorio historico");
                 return true;

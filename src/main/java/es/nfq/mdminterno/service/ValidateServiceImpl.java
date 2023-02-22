@@ -1,16 +1,15 @@
 package es.nfq.mdminterno.service;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.stream.MalformedJsonException;
+import com.google.gson.*;
 import es.nfq.mdminterno.utils.exception.APIException;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -18,7 +17,6 @@ import java.util.*;
 import static es.nfq.mdminterno.utils.Constantes.*;
 
 @Service
-@Slf4j
 public class ValidateServiceImpl implements IValidateService {
     private final IProcessService processService;
 
@@ -29,27 +27,16 @@ public class ValidateServiceImpl implements IValidateService {
 
     @Override
     public boolean operacionValida(String operacion) {
-        switch (operacion) {
-            case ALTA:
-            case BAJA:
-            case ALTA_CONSENTIMIENTO:
-            case ALTA_ROL:
-            case BAJA_MDM:
-            case BAJA_CONSENTIMIENTO:
-            case BAJA_ROL:
-                return true;
-            default:
-                return false;
-        }
+        return Arrays.asList(OPERACIONES).contains(operacion);
     }
 
     @Override
     public boolean validarJson(Object datos, String operacion) {
+        Logger log = Logger.getLogger("java");
         // Obtener keys del json
         Gson gson = new Gson();
         LinkedHashMap mapa = (LinkedHashMap) datos;
         String jsonMapa = gson.toJson(mapa);
-//        jsonMapa = processService.limpiarContenido(jsonMapa); //FIXME problema con los arrays en la request
         List<String> keysInput = new ArrayList<>();
         JsonElement element = JsonParser.parseString(jsonMapa);
         getAllKeys(element, keysInput);
@@ -73,6 +60,7 @@ public class ValidateServiceImpl implements IValidateService {
         }
         getAllKeys(element, keysInterface);
 
+        // Convertimos a conjunto para no repetir elementos y comparar
         Set<String> setInput = new HashSet<>(keysInput);
         Set<String> setInterface = new HashSet<>(keysInterface);
 
@@ -88,12 +76,15 @@ public class ValidateServiceImpl implements IValidateService {
 
     @Override
     public boolean procesoJson(String operacion, Object datos) {
-        // Creacion fichero
-        String ruta = Paths.get("").toAbsolutePath().toString();
         LocalDateTime ldt = LocalDateTime.now();
         String stringLdt = ldt.toString();
         stringLdt = stringLdt.replace(":", "_");
         stringLdt = stringLdt.replace(".", "_");
+
+        Logger log = Logger.getLogger("java");
+
+        // Creacion fichero
+        String ruta = Paths.get("").toAbsolutePath().toString();
         String rutaTotal = ruta + RUTA_ARCHIVOS + operacion + "_" + stringLdt + ".json";
         File file = new File(rutaTotal);
 
@@ -113,7 +104,8 @@ public class ValidateServiceImpl implements IValidateService {
         return processService.procesarFile(file, operacion);
     }
 
-    public static void getAllKeys(JsonElement element, List<String> keys) {
+    private static void getAllKeys(JsonElement element, List<String> keys) {
+        // Caso JSON
         if (element.isJsonObject()) {
             JsonObject obj = element.getAsJsonObject();
             Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
@@ -121,11 +113,19 @@ public class ValidateServiceImpl implements IValidateService {
                 String key = entry.getKey();
                 keys.add(key.toLowerCase());
                 JsonElement value = entry.getValue();
-                if (value != null && value.isJsonObject()) {
+                if (value != null && (value.isJsonObject() || value.isJsonArray())) {
                     getAllKeys(value, keys);
                 }
             });
+
+            // Caso array
+        } else if (element.isJsonArray()) {
+            JsonArray array = element.getAsJsonArray();
+            for (JsonElement item : array) {
+                if (item != null && (item.isJsonObject() || item.isJsonArray())) {
+                    getAllKeys(item, keys);
+                }
+            }
         }
     }
-
 }
