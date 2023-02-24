@@ -1,14 +1,9 @@
 package es.nfq.mdminterno.utils;
 
-import org.apache.log4j.Logger;
-
 public class Constantes {
-    private static final Logger log = null;
     private Constantes() {
     }
 
-    // TODO log java + phyton (ALTACONSENTIMIENTO_TIMESTAMP)
-    // TODO carpeta por cada timestamp (ejecucion)
     // TODO sistema de limpieza de logs
     // TODO validar que pkOrigen sea un Array
 
@@ -16,6 +11,7 @@ public class Constantes {
     public static final String RUTA_ERROR = "\\src\\main\\resources\\errores\\";
     public static final String RUTA_ARCHIVOS = "\\src\\main\\resources\\archivos\\";
     public static final String RUTA_INTERFACES = "src/main/resources/interfaces";
+    public static final String RUTA_LOG = "src/main/resources/log/";
     public static final String ALTA = "AltaCliente";
     public static final String ALTA_CONSENTIMIENTO = "AltaConsentimiento";
     public static final String ALTA_ROL = "AltaRol";

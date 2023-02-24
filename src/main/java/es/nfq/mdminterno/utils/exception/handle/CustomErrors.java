@@ -1,9 +1,7 @@
 package es.nfq.mdminterno.utils.exception.handle;
 
-import es.nfq.mdminterno.utils.Constantes;
 import es.nfq.mdminterno.utils.exception.APIException;
 import es.nfq.mdminterno.utils.response.ResponseAPI;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

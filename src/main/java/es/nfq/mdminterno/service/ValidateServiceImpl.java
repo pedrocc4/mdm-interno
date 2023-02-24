@@ -2,7 +2,6 @@ package es.nfq.mdminterno.service;
 
 import com.google.gson.*;
 import es.nfq.mdminterno.utils.exception.APIException;
-import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,8 +10,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 import java.util.*;
+import java.util.logging.Logger;
 
 import static es.nfq.mdminterno.utils.Constantes.*;
 
@@ -31,8 +30,7 @@ public class ValidateServiceImpl implements IValidateService {
     }
 
     @Override
-    public boolean validarJson(Object datos, String operacion) {
-        Logger log = Logger.getLogger("java");
+    public boolean validarJson(Object datos, String operacion, Logger log) {
         // Obtener keys del json
         Gson gson = new Gson();
         LinkedHashMap mapa = (LinkedHashMap) datos;
@@ -55,7 +53,8 @@ public class ValidateServiceImpl implements IValidateService {
             elementString = processService.limpiarContenido(elementString);
             element = JsonParser.parseString(elementString);
         } catch (Exception e) {
-            log.error("Se ha producido un error al leer la interfaz: " + e.getLocalizedMessage());
+            log.severe("Se ha producido un error al leer la interfaz: " + e.getLocalizedMessage());
+            log.info(PROCESO_TERMINADO);
             throw new APIException(ERROR_INESPERADO);
         }
         getAllKeys(element, keysInterface);
@@ -68,6 +67,8 @@ public class ValidateServiceImpl implements IValidateService {
         onlyInSet2.removeAll(setInput);
 
         if (!onlyInSet2.isEmpty()) {
+            log.severe("Debes incluir los siguientes campos: " + onlyInSet2);
+            log.info(PROCESO_TERMINADO);
             throw new APIException("Debes incluir los siguientes campos: " + onlyInSet2);
         }
 
@@ -75,17 +76,10 @@ public class ValidateServiceImpl implements IValidateService {
     }
 
     @Override
-    public boolean procesoJson(String operacion, Object datos) {
-        LocalDateTime ldt = LocalDateTime.now();
-        String stringLdt = ldt.toString();
-        stringLdt = stringLdt.replace(":", "_");
-        stringLdt = stringLdt.replace(".", "_");
-
-        Logger log = Logger.getLogger("java");
-
+    public boolean procesoJson(String operacion, Object datos, Logger log, String timestamp) {
         // Creacion fichero
         String ruta = Paths.get("").toAbsolutePath().toString();
-        String rutaTotal = ruta + RUTA_ARCHIVOS + operacion + "_" + stringLdt + ".json";
+        String rutaTotal = ruta + RUTA_ARCHIVOS + operacion + "_" + timestamp + ".json";
         File file = new File(rutaTotal);
 
         // Escritura
@@ -97,11 +91,12 @@ public class ValidateServiceImpl implements IValidateService {
             myWriter.write(jsonMapa);
             myWriter.close();
         } catch (IOException e) {
-            log.error("Se ha producido un error al escribir el archivo json: " + e.getLocalizedMessage());
+            log.severe("Se ha producido un error al escribir el archivo json: " + e.getLocalizedMessage());
+            log.info(PROCESO_TERMINADO);
             throw new APIException(ERROR_INESPERADO);
         }
         // Ejecutar python y mover fichero
-        return processService.procesarFile(file, operacion);
+        return processService.procesarFile(file, operacion, log, timestamp);
     }
 
     private static void getAllKeys(JsonElement element, List<String> keys) {
